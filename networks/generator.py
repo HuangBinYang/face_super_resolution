@@ -12,7 +12,7 @@ class Generator(nn.Module):
         )
         self.prelu1 = nn.PReLU()
         self.residual_blocks = nn.Sequential(
-            *[ResidualBlock() for _ in range(self.num_res_blocks)]
+            ResidualBlock() for _ in range(self.num_res_blocks)
         )
 
         self.conv_a1 = nn.Conv2d(
