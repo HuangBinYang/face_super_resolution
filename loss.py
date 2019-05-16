@@ -37,9 +37,9 @@ class PerceptualNetwork(nn.Module):
 
 
 class PerceptualLoss(nn.Module):
-    def __init__(self):
+    def __init__(self, device):
         super().__init__()
-        self.perceptual_network = PerceptualNetwork()
+        self.perceptual_network = PerceptualNetwork().to(device)
         self.mse_loss = nn.MSELoss()
 
     def forward(self, input_a, input_b):

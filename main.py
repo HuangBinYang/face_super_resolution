@@ -18,6 +18,10 @@ import torchvision.transforms as transforms
 import torchvision.utils as vutils
 import numpy as np
 from tqdm import tqdm, trange
+
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
 HR_TRANSFORM = transforms.Compose([
     transforms.ToTensor(),
 ])
@@ -25,6 +29,9 @@ LR_TRANSFORM = transforms.Compose([
     transforms.Resize(128),
     transforms.ToTensor(),
 ])
+TRY_GPU = False
+DEVICE = torch.device("cuda:0" if (torch.cuda.is_available() and TRY_GPU) else "cpu")
+
 class CustomImageFolder(dset.ImageFolder):
     def __init__(self, root, transform=HR_TRANSFORM, lr_transform=LR_TRANSFORM):
         super(CustomImageFolder, self).__init__(root, transform=transform)
@@ -62,11 +69,12 @@ if __name__ == "__main__":
     # perceptual_loss = PerceptualLoss()
     dataroot = "dataset/"
     dataset = CustomImageFolder(root=dataroot)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=2)
     batch = next(iter(dataloader))
 
-    gen_net = Generator(num_res_blocks=2)
-    perceptual_loss = PerceptualLoss()
+    gen_net = Generator(num_res_blocks=2).to(DEVICE)
+    print(count_parameters(gen_net))
+    perceptual_loss = PerceptualLoss(device=DEVICE)
     lr = 0.0002
     beta1 = 0.5
 
@@ -75,6 +83,8 @@ if __name__ == "__main__":
 
     for epoch in range(100):
         for hr_sample, lr_sample in dataloader:
+            hr_sample = hr_sample.to(DEVICE)
+            lr_sample = lr_sample.to(DEVICE)
             gen_net.zero_grad()
             sr_sample = gen_net(lr_sample)
             loss = perceptual_loss(hr_sample, sr_sample)
