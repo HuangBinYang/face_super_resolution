@@ -167,7 +167,7 @@ if __name__ == "__main__":
             mse_part = mse_loss(hr_sample, sr_sample)
             perceptual_part = perceptual_loss(hr_sample, sr_sample) * 0.012
             if epoch >= args.start_discriminator:
-                gan_part = (1 - sr_dis).mean() * 0.001
+                gan_part = (1 - sr_dis).mean() * 0.01
             else:
                 gan_part = 0
             g_loss = mse_loss(hr_sample, sr_sample) + perceptual_part + gan_part
@@ -208,6 +208,6 @@ if __name__ == "__main__":
                 del sr_test
                 torch.cuda.empty_cache()
         with open(f'{models_dir}/trainings_stats_{epoch}.yml', 'w') as f:
-            yaml.dump(stats, f)
+            yaml.dump({str(x): float(y) for x, y in stats.items()}, f)
         torch.save(gen_net.state_dict(), f"{models_dir}/gen_epoch_{epoch}.pth")
         torch.save(dis_net.state_dict(), f"{models_dir}/dis_epoch_{epoch}.pth")
