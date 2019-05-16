@@ -2,9 +2,7 @@ import torch
 from torch import nn as nn
 from torchvision.models.vgg import vgg19
 import torchvision.transforms as transforms
-
-
-device = "cpu"
+import torch.autograd as autograd
 
 
 class Normalization(nn.Module):
@@ -46,3 +44,24 @@ class PerceptualLoss(nn.Module):
         return self.mse_loss(
             self.perceptual_network(input_a), self.perceptual_network(input_b)
         )
+
+
+def calc_grad_pen(dis_net, hr_sample, sr_sample, device):
+    alpha = (
+        torch.rand(sr_sample.size()[0], 1, 1, 1).expand(*sr_sample.size()).to(device)
+    )
+    interpolates = autograd.Variable(
+        alpha * sr_sample.detach() + (1 - alpha) * hr_sample.detach()
+    )
+    interpolates.requires_grad_(True)
+    int_dis = dis_net(interpolates)
+    gradients = autograd.grad(
+        outputs=int_dis,
+        inputs=interpolates,
+        grad_outputs=torch.ones(int_dis.size()).to(device),
+        create_graph=True,
+        retain_graph=True,
+        only_inputs=True,
+    )[0]
+    gradients = gradients.view(gradients.size(0), -1)
+    return ((gradients.norm(2, dim=1) - 1) ** 2).mean()
