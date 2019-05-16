@@ -85,7 +85,7 @@ if __name__ == "__main__":
     optimizerG = optim.Adam(gen_net.parameters(), lr=lr, betas=(beta1, 0.999))
 
 
-    for epoch in range(100):
+    for epoch in range(1000):
         for hr_sample, lr_sample in dataloader:
             hr_sample = hr_sample.to(DEVICE)
             lr_sample = lr_sample.to(DEVICE)
