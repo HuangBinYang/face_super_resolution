@@ -28,11 +28,12 @@ class Block(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self):
+    def __init__(self, hr_size=512):
         super().__init__()
         self.conv = nn.Conv2d(
             in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1
         )
+        tmp = hr_size // 8 
         self.leaky_relu = nn.LeakyReLU(0.2)
         params = [
             (64, 64, 2),
@@ -47,7 +48,7 @@ class Discriminator(nn.Module):
         for in_c, out_c, stride in params:
             self.blocks_list.append(Block(in_c, out_c, stride))
         self.blocks = nn.Sequential(*self.blocks_list)
-        self.dense1 = nn.Linear(512 * 32 * 32, 1024)
+        self.dense1 = nn.Linear(512 * tmp * tmp, 1024)
         self.leaky_relu2 = nn.LeakyReLU(0.2)
         self.dense2 = nn.Linear(1024, 1)
         self.sigmoid = nn.Sigmoid()

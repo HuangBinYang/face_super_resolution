@@ -19,17 +19,21 @@ import torchvision.utils as vutils
 import numpy as np
 from tqdm import tqdm, trange
 
+SCALE_FACTOR = 4
+HR_SIZE = 128
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 HR_TRANSFORM = transforms.Compose([
+    transforms.Resize(HR_SIZE),
+
     transforms.ToTensor(),
 ])
 LR_TRANSFORM = transforms.Compose([
-    transforms.Resize(128),
+    transforms.Resize(HR_SIZE // 4),
     transforms.ToTensor(),
 ])
-TRY_GPU = False
+TRY_GPU = True
 DEVICE = torch.device("cuda:0" if (torch.cuda.is_available() and TRY_GPU) else "cpu")
 
 class CustomImageFolder(dset.ImageFolder):
@@ -72,7 +76,7 @@ if __name__ == "__main__":
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=2)
     batch = next(iter(dataloader))
 
-    gen_net = Generator(num_res_blocks=2).to(DEVICE)
+    gen_net = Generator(num_res_blocks=2, upscale_factor=SCALE_FACTOR).to(DEVICE)
     print(count_parameters(gen_net))
     perceptual_loss = PerceptualLoss(device=DEVICE)
     lr = 0.0002

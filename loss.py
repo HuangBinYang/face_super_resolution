@@ -1,11 +1,12 @@
 import torch
 from torch import nn as nn
 from torchvision.models.vgg import vgg19
+import torchvision.transforms as transforms
+
 
 
 device = "cpu"
-cnn_normalization_mean = torch.tensor([0.485, 0.456, 0.406]).to(device)
-cnn_normalization_std = torch.tensor([0.229, 0.224, 0.225]).to(device)
+
 
 
 class Normalization(nn.Module):
@@ -39,10 +40,15 @@ class PerceptualNetwork(nn.Module):
 class PerceptualLoss(nn.Module):
     def __init__(self, device):
         super().__init__()
+        self.cnn_normalization_mean = torch.tensor([0.485, 0.456, 0.406]).to(device).view(-1, 1, 1)
+        self.cnn_normalization_std = torch.tensor([0.229, 0.224, 0.225]).to(device).view(-1, 1, 1)
+        self.transform = transforms.Normalize(self.cnn_normalization_mean, self.cnn_normalization_std)
         self.perceptual_network = PerceptualNetwork().to(device)
         self.mse_loss = nn.MSELoss()
 
     def forward(self, input_a, input_b):
+        input_a = (input_a - self.cnn_normalization_mean) / self.cnn_normalization_std
+        input_b = (input_b - self.cnn_normalization_mean) / self.cnn_normalization_std
         return self.mse_loss(
             self.perceptual_network(input_a), self.perceptual_network(input_b)
         )
