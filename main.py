@@ -86,6 +86,18 @@ parser.add_argument(
     type=int,
     help="Generator residual blocks (default: 8)",
 )
+parser.add_argument(
+    "--gan_part_coef",
+    default=0.01,
+    type=float,
+    help="GAN part coefficient",
+)
+parser.add_argument(
+    "--perc_part_coef",
+    default=0.012,
+    type=float,
+    help="Perceptual part coefficient",
+)
 
 parser.add_argument("--gpu", dest="gpu", action="store_true")
 parser.add_argument("--cpu", dest="gpu", action="store_false")
@@ -131,6 +143,8 @@ if __name__ == "__main__":
 
     hr_test, _ = next(iter(test_dataloader))
     vutils.save_image(hr_test, f"{results_dir}/hr.png", normalize=True)
+    with open(f'{models_dir}/args.yml', 'w') as f:
+            yaml.dump(args, f)
     for epoch in range(args.epochs):
         training_bar = tqdm(train_dataloader)
         stats = defaultdict(float)
@@ -152,22 +166,22 @@ if __name__ == "__main__":
 
                 d_loss = sr_dis + 1 - hr_dis
                 d_loss_total = d_loss + gradient_penalty
-                d_loss_total.backward(retain_graph=True)
+                d_loss_total.backward()
                 opt_dis.step()
             else:
-                hr_sample = hr_sample.to(device)
-                lr_sample = lr_sample.to(device)
                 d_loss = 0
                 gradient_penalty = 0
-
             gen_net.zero_grad()
+            hr_sample = hr_sample.to(device)
+            lr_sample = lr_sample.to(device)
             sr_sample = gen_net(lr_sample)
             sr_dis = dis_net(sr_sample).mean()
+        
 
             mse_part = mse_loss(hr_sample, sr_sample)
-            perceptual_part = perceptual_loss(hr_sample, sr_sample) * 0.012
+            perceptual_part = perceptual_loss(hr_sample, sr_sample) * args.perc_part_coef
             if epoch >= args.start_discriminator:
-                gan_part = (1 - sr_dis).mean() * 0.01
+                gan_part = (1 - sr_dis).mean() * args.gan_part_coef
             else:
                 gan_part = 0
             g_loss = mse_loss(hr_sample, sr_sample) + perceptual_part + gan_part
