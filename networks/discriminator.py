@@ -28,12 +28,12 @@ class Block(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, hr_size=512):
+    def __init__(self, hr_size=256):
         super().__init__()
         self.conv = nn.Conv2d(
             in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1
         )
-        tmp = hr_size // 8 
+        tmp = hr_size // 16
         self.leaky_relu = nn.LeakyReLU(0.2)
         params = [
             (64, 64, 2),

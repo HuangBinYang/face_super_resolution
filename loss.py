@@ -4,13 +4,11 @@ from torchvision.models.vgg import vgg19
 import torchvision.transforms as transforms
 
 
-
 device = "cpu"
 
 
-
 class Normalization(nn.Module):
-    def __init__(self, mean, std, device='cpu'):
+    def __init__(self, mean, std, device="cpu"):
         super(Normalization, self).__init__()
         self.mean = torch.tensor(mean).to(device).view(-1, 1, 1)
         self.std = torch.tensor(std).to(device).view(-1, 1, 1)
@@ -34,9 +32,11 @@ class PerceptualNetwork(nn.Module):
 
 
 class PerceptualLoss(nn.Module):
-    def __init__(self, device='cpu'):
+    def __init__(self, device="cpu"):
         super().__init__()
-        self.normalization = Normalization([0.485, 0.456, 0.406],[0.229, 0.224, 0.225], device )
+        self.normalization = Normalization(
+            [0.485, 0.456, 0.406], [0.229, 0.224, 0.225], device
+        )
         self.perceptual_network = PerceptualNetwork().to(device)
         self.mse_loss = nn.MSELoss()
 

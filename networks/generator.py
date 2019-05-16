@@ -9,7 +9,7 @@ class Generator(nn.Module):
         self.num_res_blocks = num_res_blocks
         self.upscale_factor = upscale_factor
         power = int(np.log2(self.upscale_factor))
-        assert 2**power == self.upscale_factor
+        assert 2 ** power == self.upscale_factor
         self.conv_before = nn.Conv2d(
             in_channels=3, out_channels=64, kernel_size=9, stride=1, padding=4
         )
