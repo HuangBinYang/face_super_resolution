@@ -34,7 +34,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--from_pretrained_gen", default="", help="Load models and start training from them"
+    "--from_pretrained_gen", default="pretrained_models/generator.pth", help="Load models and start training from them"
 )
 
 parser.add_argument("--hr_size", default=256, help="High resolution size")
