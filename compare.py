@@ -59,6 +59,7 @@ if __name__ == "__main__":
     )
     now = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
     compare_dir = f"compare/{now}"
+    print(f'Saving SR images in: ./{compare_dir}/')
     os.makedirs(compare_dir, exist_ok=True)
 
     test_dataset = VisDataset(
