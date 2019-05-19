@@ -1,4 +1,4 @@
-# 	CS-E4890 - Deep Learning
+# 	CS-E4890 - Deep Learning - Aalto University
 
 Super-Resolution Generative Adversarial with WGAN-GP loss.
 
