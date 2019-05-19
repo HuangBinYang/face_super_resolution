@@ -24,8 +24,7 @@ Running `python compare.py` with default arguments will generate images for you 
 * Xianxu Hou, Linlin Shen, Ke Sun, and Guoping Qiu. Deep feature consistent variational autoencoder. 2016.
 * Tero Karras, Samuli Laine, and Timo Aila. A style-based generator architecture for generative adversarial networks. 2018.
 * Diederik P Kingma and Max Welling. Auto-encoding variational bayes. 2013.
-* Christian Ledig et al. Photo-realistic single image super-resolution using a generative adversarial network. 2016.
-
+* Christian Ledig, Lucas Theis, Ferenc Huszar, Jose Caballero, Andrew Cunningham, Alejandro Acosta, Andrew Aitken, Alykhan Tejani, Johannes Totz, Zehan Wang, and Wenzhe Shi. Photo-realistic single image super-resolution using a generative adversarial network. 2016.
 ### Author
 
 me
