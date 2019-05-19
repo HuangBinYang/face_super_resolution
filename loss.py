@@ -55,6 +55,7 @@ def calc_grad_pen(dis_net, hr_sample, sr_sample, device):
     )
     interpolates.requires_grad_(True)
     int_dis = dis_net(interpolates)
+
     gradients = autograd.grad(
         outputs=int_dis,
         inputs=interpolates,
@@ -63,5 +64,7 @@ def calc_grad_pen(dis_net, hr_sample, sr_sample, device):
         retain_graph=True,
         only_inputs=True,
     )[0]
+
     gradients = gradients.view(gradients.size(0), -1)
+
     return ((gradients.norm(2, dim=1) - 1) ** 2).mean()

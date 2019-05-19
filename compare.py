@@ -75,7 +75,7 @@ if __name__ == "__main__":
     gen_path = args.from_pretrained_gen
     if gen_path:
         gen_net.load_state_dict(torch.load(gen_path))
-        
+
     test_iter = iter(test_dataloader)
 
     for i, (hr_test, lr_test, simple_sr_test) in zip(range(args.iterations), test_iter):
