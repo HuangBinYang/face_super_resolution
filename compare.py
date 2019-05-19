@@ -27,10 +27,10 @@ import yaml
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
-    "--test_data_path",
-    default="dataset/test_dataset",
+    "--data_path",
+    default="example_images/",
     type=str,
-    help="Test dataset path (default: data/test_dataset/)",
+    help="Test dataset path (default: example_images)",
 )
 
 parser.add_argument(
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     os.makedirs(compare_dir, exist_ok=True)
 
     test_dataset = VisDataset(
-        root=args.test_data_path, scale_factor=args.scale_factor, hr_size=args.hr_size
+        root=args.data_path, scale_factor=args.scale_factor, hr_size=args.hr_size
     )
     test_dataloader = torch.utils.data.DataLoader(
         test_dataset, batch_size=args.vis_batch_size
