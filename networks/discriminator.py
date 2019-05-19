@@ -28,8 +28,9 @@ class Block(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, hr_size=256):
+    def __init__(self, hr_size=256, sigmoid=True):
         super().__init__()
+        self.end_sigmoid = sigmoid
         self.conv = nn.Conv2d(
             in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1
         )
@@ -62,5 +63,6 @@ class Discriminator(nn.Module):
         x = self.dense1(x)
         x = self.leaky_relu2(x)
         x = self.dense2(x)
-        x = self.sigmoid(x)
+        if self.end_sigmoid:
+            x = self.sigmoid(x)
         return x

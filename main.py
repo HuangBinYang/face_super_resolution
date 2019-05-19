@@ -23,6 +23,7 @@ import os
 from collections import defaultdict
 import yaml
 
+
 def count_parameters(model) -> int:
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
@@ -30,13 +31,13 @@ def count_parameters(model) -> int:
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--train_data_path",
-    default="dataset/",
+    default="dataset/train_dataset",
     type=str,
     help="Training ataset path (default: data/train_dataset/)",
 )
 parser.add_argument(
     "--test_data_path",
-    default="dataset/",
+    default="dataset/test_dataset",
     type=str,
     help="Test dataset path (default: data/test_dataset/)",
 )
@@ -87,17 +88,32 @@ parser.add_argument(
     help="Generator residual blocks (default: 8)",
 )
 parser.add_argument(
-    "--gan_part_coef",
-    default=0.01,
-    type=float,
-    help="GAN part coefficient",
+    "--gan_part_coef", default=0.01, type=float, help="GAN part coefficient"
 )
 parser.add_argument(
-    "--perc_part_coef",
-    default=0.012,
-    type=float,
-    help="Perceptual part coefficient",
+    "--perc_part_coef", default=0.012, type=float, help="Perceptual part coefficient"
 )
+parser.add_argument(
+    "--mse_part_coef", default=1.0, type=float, help="MSE part coefficient"
+)
+parser.add_argument("--lr", default=0.0001, type=float, help="Learning rate")
+parser.add_argument(
+    "--from_pretrained_gen", default="", help="Load models and start training from them"
+)
+parser.add_argument(
+    "--from_pretrained_dis", default="", help="Load models and start training from them"
+)
+parser.add_argument(
+    "--from_pretrained_optimizer_gen",
+    default="",
+    help="Load optimizers and start training from them",
+)
+parser.add_argument(
+    "--from_pretrained_optimizer_dis",
+    default="",
+    help="Load optimizers and start training from them",
+)
+parser.add_argument("--no_sigmoid", action="store_true")
 
 parser.add_argument("--gpu", dest="gpu", action="store_true")
 parser.add_argument("--cpu", dest="gpu", action="store_false")
@@ -130,24 +146,39 @@ if __name__ == "__main__":
     gen_net = Generator(
         num_res_blocks=args.gen_res_blocks, upscale_factor=args.scale_factor
     ).to(device)
-    dis_net = Discriminator(hr_size=args.random_crop_size).to(device)
+    dis_net = Discriminator(
+        hr_size=args.random_crop_size, sigmoid=not args.no_sigmoid
+    ).to(device)
     print(f"Generator number of parameters: {count_parameters(gen_net)}")
     print(f"Discriminator number of parameters: {count_parameters(dis_net)}")
+
+    gen_path = args.from_pretrained_gen
+    if gen_path:
+        gen_net.load_state_dict(torch.load(gen_path))
+    dis_path = args.from_pretrained_dis
+    if dis_path:
+        dis_net.load_state_dict(torch.load(dis_path))
+
     perceptual_loss = PerceptualLoss(device=device)
     mse_loss = nn.MSELoss()
-    lr = 0.0001
     beta1 = 0.9
 
-    opt_gen = optim.Adam(gen_net.parameters(), lr=lr, betas=(beta1, 0.999))
-    opt_dis = optim.Adam(dis_net.parameters(), lr=lr, betas=(beta1, 0.999))
-
-    hr_test, _ = next(iter(test_dataloader))
+    opt_gen = optim.Adam(gen_net.parameters(), lr=args.lr, betas=(beta1, 0.999))
+    opt_dis = optim.Adam(dis_net.parameters(), lr=args.lr, betas=(beta1, 0.999))
+    opt_gen_path = args.from_pretrained_optimizer_gen
+    opt_dis_path = args.from_pretrained_optimizer_dis
+    if opt_gen_path:
+        opt_gen.load_state_dict(torch.load(opt_gen_path))
+    if opt_dis_path:
+        opt_dis.load_state_dict(torch.load(opt_dis_path))
+    hr_test, lr_test = next(iter(test_dataloader))
     vutils.save_image(hr_test, f"{results_dir}/hr.png", normalize=True)
-    with open(f'{models_dir}/args.yml', 'w') as f:
-            yaml.dump(args, f)
+    vutils.save_image(lr_test, f"{results_dir}/lr.png", normalize=True)
+    with open(f"{models_dir}/args.yml", "w") as f:
+        yaml.dump(args, f)
     for epoch in range(args.epochs):
         training_bar = tqdm(train_dataloader)
-        stats = defaultdict(float)
+        stats: defaultdict = defaultdict(float)
         for i, (hr_sample, lr_sample) in enumerate(training_bar, 1):
             gen_net = gen_net.train()
 
@@ -175,16 +206,24 @@ if __name__ == "__main__":
             hr_sample = hr_sample.to(device)
             lr_sample = lr_sample.to(device)
             sr_sample = gen_net(lr_sample)
-            sr_dis = dis_net(sr_sample).mean()
-        
 
             mse_part = mse_loss(hr_sample, sr_sample)
-            perceptual_part = perceptual_loss(hr_sample, sr_sample) * args.perc_part_coef
+            if args.mse_part_coef > 0:
+                mse_part = mse_loss(hr_sample, sr_sample) * args.mse_part_coef
+            else:
+                mse_part = 0
+            if args.perc_part_coef > 0:
+                perceptual_part = (
+                    perceptual_loss(hr_sample, sr_sample) * args.perc_part_coef
+                )
+            else:
+                perceptual_part = 0
             if epoch >= args.start_discriminator:
+                sr_dis = dis_net(sr_sample).mean()
                 gan_part = (1 - sr_dis).mean() * args.gan_part_coef
             else:
                 gan_part = 0
-            g_loss = mse_loss(hr_sample, sr_sample) + perceptual_part + gan_part
+            g_loss = mse_part + perceptual_part + gan_part
             g_loss.backward()
             opt_gen.step()
 
@@ -194,9 +233,7 @@ if __name__ == "__main__":
             stats["d_loss"] = stats["d_loss_sum"] / stats["denom"]
 
             stats["gradient_penalty_sum"] += gradient_penalty
-            stats["gradient_penalty"] = (
-                stats["gradient_penalty_sum"] / stats["denom"]
-            )
+            stats["gradient_penalty"] = stats["gradient_penalty_sum"] / stats["denom"]
 
             stats["mse_part_sum"] += mse_part
             stats["mse_part"] = stats["mse_part_sum"] / stats["denom"]
@@ -221,7 +258,13 @@ if __name__ == "__main__":
                 )
                 del sr_test
                 torch.cuda.empty_cache()
-        with open(f'{models_dir}/trainings_stats_{epoch}.yml', 'w') as f:
+        with open(f"{models_dir}/trainings_stats_{epoch}.yml", "w") as f:
             yaml.dump({str(x): float(y) for x, y in stats.items()}, f)
         torch.save(gen_net.state_dict(), f"{models_dir}/gen_epoch_{epoch}.pth")
-        torch.save(dis_net.state_dict(), f"{models_dir}/dis_epoch_{epoch}.pth")
+        torch.save(opt_gen.state_dict(), f"{models_dir}/opt_gen_epoch_{epoch}.pth")
+        if epoch > args.start_discriminator:
+            if (epoch % 10 == 0 and epoch != 0) or epoch == args.epochs - 1:
+                torch.save(
+                    opt_dis.state_dict(), f"{models_dir}/opt_dis_epoch_{epoch}.pth"
+                )
+                torch.save(dis_net.state_dict(), f"{models_dir}/dis_epoch_{epoch}.pth")
