@@ -1,6 +1,6 @@
 # 	CS-E4890 - Deep Learning - Aalto University
 
-Super-Resolution Generative Adversarial with WGAN-GP loss.
+Super-Resolution Generative Adversarial Network with WGAN-GP loss trained on (preprocessed) Flickr-Faces-HQ Dataset.
 
 Project for CS-E4890 - Deep Learning course in Aalto University.
 
